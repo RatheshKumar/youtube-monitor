@@ -1,0 +1,337 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Realtime Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #f4f6f8;
+            --card-bg: white;
+            --text: #333;
+            --header-bg: #ff0000;
+            --header-text: white;
+            --highlight: #d4edda;
+            --growth-color: #28a745;
+        }
+
+        body.dark {
+            --bg: #121212;
+            --card-bg: #1e1e1e;
+            --text: #eee;
+            --header-bg: #bb0000;
+            --header-text: white;
+            --highlight: #335533;
+            --growth-color: #00ff66;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI',sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            transition: 0.3s;
+        }
+
+        header {
+            background: var(--header-bg);
+            color: var(--header-text);
+            padding: 20px;
+            text-align: center;
+            font-size: 2em;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+            header button {
+                padding: 6px 12px;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 0.9em;
+                background: white;
+                color: #333;
+            }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            max-width: 1200px;
+            margin: 20px auto;
+            gap: 20px;
+            padding: 0 15px;
+        }
+
+        .left-column {
+            flex: 1;
+            min-width: 280px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .right-column {
+            flex: 2;
+            min-width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .search-panel {
+            display: flex;
+            gap: 0;
+        }
+
+            .search-panel input {
+                flex: 1;
+                padding: 12px;
+                border-radius: 6px 0 0 6px;
+                border: 1px solid #ccc;
+                font-size: 1em;
+            }
+
+            .search-panel button {
+                padding: 12px 20px;
+                border-radius: 0 6px 6px 0;
+                background: #ff0000;
+                color: white;
+                border: none;
+                cursor: pointer;
+            }
+
+                .search-panel button:hover {
+                    background: #cc0000;
+                }
+
+        #message {
+            font-style: italic;
+            color: #555;
+            text-align: center;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            position: relative;
+            overflow: hidden;
+            perspective: 1000px;
+        }
+
+            .stat-card .inner {
+                transition: transform 0.6s;
+                transform-style: preserve-3d;
+            }
+
+            .stat-card.flip .inner {
+                transform: rotateY(180deg);
+            }
+
+            .stat-card .front, .stat-card .back {
+                position: absolute;
+                width: 100%;
+                backface-visibility: hidden;
+                top: 0;
+                left: 0;
+            }
+
+            .stat-card .back {
+                transform: rotateY(180deg);
+                color: #ff0;
+                font-weight: bold;
+                font-size: 1.1em;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .stat-card .label {
+                font-size: 0.95em;
+                color: #777;
+            }
+
+            .stat-card .value {
+                font-weight: bold;
+                font-size: 1.7em;
+                margin-top: 5px;
+                background: #333;
+                padding: 5px 0;
+                border-radius: 8px;
+                transition: 0.3s;
+            }
+
+        .pulse {
+            animation: pulseAnim 0.8s ease-out;
+        }
+
+        @keyframes pulseAnim {
+            0% {
+                background: #333
+            }
+
+            50% {
+                background: #ff3333
+            }
+
+            100% {
+                background: #333
+            }
+        }
+
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 5px;
+            background: #ff3333;
+            width: 0%;
+            transition: width 0.8s ease;
+            border-radius: 0 0 12px 12px;
+        }
+
+        canvas {
+            background: var(--card-bg);
+            border-radius: 12px;
+        }
+
+        /* Responsive */
+        @media(max-width:900px) {
+            .cards {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        YouTube Realtime Dashboard
+        <button id="themeBtn">Dark Mode</button>
+    </header>
+
+    <div class="container">
+        <div class="left-column">
+            <div class="search-panel">
+                <input type="text" id="channelInput" placeholder="Enter channel name or URL">
+                <button id="searchBtn">Search</button>
+            </div>
+            <div id="message"></div>
+
+            <div class="cards">
+                <div class="stat-card" id="cardTitle">
+                    <div class="inner">
+                        <div class="front"><div class="label">Title</div><div id="title" class="value">-</div></div>
+                        <div class="back">Updated!</div>
+                    </div>
+                    <div class="progress-bar" id="barTitle"></div>
+                </div>
+
+                <div class="stat-card" id="cardSubs">
+                    <div class="inner">
+                        <div class="front"><div class="label">Subscribers</div><div id="subscribers" class="value">-</div></div>
+                        <div class="back">Updated!</div>
+                    </div>
+                    <div class="progress-bar" id="barSubs"></div>
+                </div>
+
+                <div class="stat-card" id="cardViews">
+                    <div class="inner">
+                        <div class="front"><div class="label">Views</div><div id="views" class="value">-</div></div>
+                        <div class="back">Updated!</div>
+                    </div>
+                    <div class="progress-bar" id="barViews"></div>
+                </div>
+
+                <div class="stat-card" id="cardVideos">
+                    <div class="inner"><div class="front"><div class="label">Videos</div><div id="videos" class="value">-</div></div></div>
+                    <div class="progress-bar" id="barVideos"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-column">
+            <canvas id="subChart" height="100"></canvas>
+            <canvas id="viewsChart" height="100"></canvas>
+            <canvas id="videosChart" height="100"></canvas>
+        </div>
+    </div>
+
+    <script>
+        let lastStats = {}; let currentChannel = ""; let timer;
+        let timeLabels = [], subData = [], viewsData = [], videosData = [];
+
+        // Dark mode toggle
+        document.getElementById("themeBtn").addEventListener("click", () => {
+            document.body.classList.toggle("dark");
+            document.getElementById("themeBtn").textContent = document.body.classList.contains("dark") ? "Light Mode" : "Dark Mode";
+        });
+
+        // Charts setup with gradient
+        function createChart(canvasId, label, color1, color2, dataArr) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            const grad = ctx.createLinearGradient(0, 0, 0, 100); grad.addColorStop(0, color1); grad.addColorStop(1, color2);
+            return new Chart(ctx, { type: 'line', data: { labels: timeLabels, datasets: [{ label: label, data: dataArr, backgroundColor: grad, borderColor: color1, fill: true, tension: 0.3 }] }, options: { responsive: true, animation: { duration: 1000 } } });
+        }
+        const subChart = createChart('subChart', 'Subscribers', '#ff6666', '#660000', subData);
+        const viewsChart = createChart('viewsChart', 'Views', '#66b3ff', '#003366', viewsData);
+        const videosChart = createChart('videosChart', 'Videos', '#66ff66', '#006600', videosData);
+
+        // Animate value with flip + pulse + progress
+        function animateValue(id, oldVal, newVal) {
+            const card = document.getElementById('card' + id);
+            const valEl = document.getElementById(id.toLowerCase());
+            const bar = document.getElementById('bar' + id);
+            card.classList.add('flip'); valEl.classList.add('pulse');
+            let percent = Math.min(100, (newVal / Math.max(newVal, oldVal)) * 100);
+            bar.style.width = percent + '%';
+            setTimeout(() => { card.classList.remove('flip'); valEl.classList.remove('pulse'); }, 600);
+            valEl.textContent = newVal.toLocaleString();
+        }
+
+        // Fetch stats from backend
+        async function fetchStats() {
+            if (!currentChannel) return;
+            try {
+                const res = await fetch(`/api/stats?channel=${encodeURIComponent(currentChannel)}`);
+                const data = await res.json(); if (data.error) return;
+                animateValue('Title', 0, 0); document.getElementById('title').textContent = data.title || "-";
+                animateValue('Subs', lastStats.subscribers || 0, data.subscribers);
+                animateValue('Views', lastStats.views || 0, data.views);
+                animateValue('Videos', lastStats.videos || 0, data.videos);
+
+                // Charts
+                const now = new Date().toLocaleTimeString();
+                timeLabels.push(now); if (timeLabels.length > 20) { timeLabels.shift(); subData.shift(); viewsData.shift(); videosData.shift(); }
+                subData.push(data.subscribers || 0); viewsData.push(data.views || 0); videosData.push(data.videos || 0);
+                subChart.update(); viewsChart.update(); videosChart.update();
+
+                lastStats = data;
+            } catch (err) { console.error(err); }
+        }
+
+        // Search
+        document.getElementById('searchBtn').addEventListener('click', () => {
+            const channel = document.getElementById('channelInput').value.trim();
+            if (!channel) return alert('Enter channel name or URL');
+            currentChannel = channel; fetchStats();
+            if (timer) clearInterval(timer); timer = setInterval(fetchStats, 15000);
+        });
+    </script>
+</body>
+</html>
