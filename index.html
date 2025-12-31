@@ -3,62 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Realtime Dashboard</title>
+    <title>YouTube Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg: #f4f6f8;
-            --card-bg: white;
-            --text: #333;
-            --header-bg: #ff0000;
-            --header-text: white;
-            --highlight: #d4edda;
-            --growth-color: #28a745;
-        }
-
-        body.dark {
             --bg: #121212;
             --card-bg: #1e1e1e;
             --text: #eee;
-            --header-bg: #bb0000;
-            --header-text: white;
-            --highlight: #335533;
-            --growth-color: #00ff66;
+            --header: #ff0000;
+            --pulse: #ff4444;
         }
 
         body {
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI',sans-serif;
+            font-family: sans-serif;
             background: var(--bg);
             color: var(--text);
-            transition: 0.3s;
         }
 
         header {
-            background: var(--header-bg);
-            color: var(--header-text);
-            padding: 20px;
+            background: var(--header);
+            color: white;
+            padding: 15px;
             text-align: center;
-            font-size: 2em;
-            font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 10;
+            font-size: 1.8em;
         }
-
-            header button {
-                padding: 6px 12px;
-                border: none;
-                border-radius: 5px;
-                cursor: pointer;
-                font-size: 0.9em;
-                background: white;
-                color: #333;
-            }
 
         .container {
             display: flex;
@@ -66,206 +36,122 @@
             max-width: 1200px;
             margin: 20px auto;
             gap: 20px;
-            padding: 0 15px;
         }
 
-        .left-column {
+        .left {
             flex: 1;
             min-width: 280px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 15px;
         }
 
-        .right-column {
+        .right {
             flex: 2;
-            min-width: 320px;
+            min-width: 300px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
-        }
-
-        .search-panel {
-            display: flex;
-            gap: 0;
-        }
-
-            .search-panel input {
-                flex: 1;
-                padding: 12px;
-                border-radius: 6px 0 0 6px;
-                border: 1px solid #ccc;
-                font-size: 1em;
-            }
-
-            .search-panel button {
-                padding: 12px 20px;
-                border-radius: 0 6px 6px 0;
-                background: #ff0000;
-                color: white;
-                border: none;
-                cursor: pointer;
-            }
-
-                .search-panel button:hover {
-                    background: #cc0000;
-                }
-
-        #message {
-            font-style: italic;
-            color: #555;
-            text-align: center;
+            gap: 15px;
         }
 
         .cards {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            gap: 10px;
         }
 
-        .stat-card {
+        .card {
             background: var(--card-bg);
-            border-radius: 12px;
             padding: 20px;
+            border-radius: 10px;
             text-align: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             position: relative;
-            overflow: hidden;
-            perspective: 1000px;
+            transition: 0.3s;
         }
 
-            .stat-card .inner {
-                transition: transform 0.6s;
-                transform-style: preserve-3d;
-            }
-
-            .stat-card.flip .inner {
+            .card.flip {
                 transform: rotateY(180deg);
             }
 
-            .stat-card .front, .stat-card .back {
-                position: absolute;
-                width: 100%;
-                backface-visibility: hidden;
-                top: 0;
-                left: 0;
+            .card .label {
+                font-size: 0.9em;
+                color: #aaa;
             }
 
-            .stat-card .back {
-                transform: rotateY(180deg);
-                color: #ff0;
+            .card .value {
+                font-size: 1.5em;
                 font-weight: bold;
-                font-size: 1.1em;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-
-            .stat-card .label {
-                font-size: 0.95em;
-                color: #777;
-            }
-
-            .stat-card .value {
-                font-weight: bold;
-                font-size: 1.7em;
                 margin-top: 5px;
                 background: #333;
                 padding: 5px 0;
-                border-radius: 8px;
-                transition: 0.3s;
+                border-radius: 5px;
             }
 
         .pulse {
-            animation: pulseAnim 0.8s ease-out;
+            animation: pulseAnim 0.8s;
         }
 
         @keyframes pulseAnim {
             0% {
-                background: #333
+                background: #333;
             }
 
             50% {
-                background: #ff3333
+                background: var(--pulse);
             }
 
             100% {
-                background: #333
+                background: #333;
             }
-        }
-
-        .progress-bar {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            height: 5px;
-            background: #ff3333;
-            width: 0%;
-            transition: width 0.8s ease;
-            border-radius: 0 0 12px 12px;
         }
 
         canvas {
             background: var(--card-bg);
-            border-radius: 12px;
+            border-radius: 10px;
         }
 
-        /* Responsive */
-        @media(max-width:900px) {
-            .cards {
-                grid-template-columns: 1fr;
-            }
+        .search {
+            display: flex;
+            gap: 0;
         }
+
+            .search input {
+                flex: 1;
+                padding: 10px;
+                border-radius: 5px 0 0 5px;
+                border: none;
+            }
+
+            .search button {
+                padding: 10px;
+                border-radius: 0 5px 5px 0;
+                border: none;
+                background: var(--header);
+                color: white;
+                cursor: pointer;
+            }
     </style>
 </head>
 <body>
 
-    <header>
-        YouTube Realtime Dashboard
-        <button id="themeBtn">Dark Mode</button>
-    </header>
+    <header>YouTube Realtime Dashboard</header>
 
     <div class="container">
-        <div class="left-column">
-            <div class="search-panel">
-                <input type="text" id="channelInput" placeholder="Enter channel name or URL">
+        <div class="left">
+            <div class="search">
+                <input id="channelInput" placeholder="Enter channel name or URL">
                 <button id="searchBtn">Search</button>
             </div>
-            <div id="message"></div>
 
             <div class="cards">
-                <div class="stat-card" id="cardTitle">
-                    <div class="inner">
-                        <div class="front"><div class="label">Title</div><div id="title" class="value">-</div></div>
-                        <div class="back">Updated!</div>
-                    </div>
-                    <div class="progress-bar" id="barTitle"></div>
-                </div>
-
-                <div class="stat-card" id="cardSubs">
-                    <div class="inner">
-                        <div class="front"><div class="label">Subscribers</div><div id="subscribers" class="value">-</div></div>
-                        <div class="back">Updated!</div>
-                    </div>
-                    <div class="progress-bar" id="barSubs"></div>
-                </div>
-
-                <div class="stat-card" id="cardViews">
-                    <div class="inner">
-                        <div class="front"><div class="label">Views</div><div id="views" class="value">-</div></div>
-                        <div class="back">Updated!</div>
-                    </div>
-                    <div class="progress-bar" id="barViews"></div>
-                </div>
-
-                <div class="stat-card" id="cardVideos">
-                    <div class="inner"><div class="front"><div class="label">Videos</div><div id="videos" class="value">-</div></div></div>
-                    <div class="progress-bar" id="barVideos"></div>
-                </div>
+                <div class="card" id="cardTitle"><div class="label">Title</div><div id="title" class="value">-</div></div>
+                <div class="card" id="cardSubs"><div class="label">Subscribers</div><div id="subscribers" class="value">-</div></div>
+                <div class="card" id="cardViews"><div class="label">Views</div><div id="views" class="value">-</div></div>
+                <div class="card" id="cardVideos"><div class="label">Videos</div><div id="videos" class="value">-</div></div>
             </div>
         </div>
 
-        <div class="right-column">
+        <div class="right">
             <canvas id="subChart" height="100"></canvas>
             <canvas id="viewsChart" height="100"></canvas>
             <canvas id="videosChart" height="100"></canvas>
@@ -273,63 +159,45 @@
     </div>
 
     <script>
-        let lastStats = {}; let currentChannel = ""; let timer;
+        let lastStats = {}, channel = "", timer;
         let timeLabels = [], subData = [], viewsData = [], videosData = [];
 
-        // Dark mode toggle
-        document.getElementById("themeBtn").addEventListener("click", () => {
-            document.body.classList.toggle("dark");
-            document.getElementById("themeBtn").textContent = document.body.classList.contains("dark") ? "Light Mode" : "Dark Mode";
-        });
+        // Charts
+        const subChart = new Chart(document.getElementById('subChart').getContext('2d'), { type: 'line', data: { labels: timeLabels, datasets: [{ label: 'Subscribers', data: subData, borderColor: '#ff4444', fill: false }] }, options: { responsive: true } });
+        const viewsChart = new Chart(document.getElementById('viewsChart').getContext('2d'), { type: 'line', data: { labels: timeLabels, datasets: [{ label: 'Views', data: viewsData, borderColor: '#44f', fill: false }] }, options: { responsive: true } });
+        const videosChart = new Chart(document.getElementById('videosChart').getContext('2d'), { type: 'line', data: { labels: timeLabels, datasets: [{ label: 'Videos', data: videosData, borderColor: '#4f4', fill: false }] }, options: { responsive: true } });
 
-        // Charts setup with gradient
-        function createChart(canvasId, label, color1, color2, dataArr) {
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            const grad = ctx.createLinearGradient(0, 0, 0, 100); grad.addColorStop(0, color1); grad.addColorStop(1, color2);
-            return new Chart(ctx, { type: 'line', data: { labels: timeLabels, datasets: [{ label: label, data: dataArr, backgroundColor: grad, borderColor: color1, fill: true, tension: 0.3 }] }, options: { responsive: true, animation: { duration: 1000 } } });
-        }
-        const subChart = createChart('subChart', 'Subscribers', '#ff6666', '#660000', subData);
-        const viewsChart = createChart('viewsChart', 'Views', '#66b3ff', '#003366', viewsData);
-        const videosChart = createChart('videosChart', 'Videos', '#66ff66', '#006600', videosData);
-
-        // Animate value with flip + pulse + progress
-        function animateValue(id, oldVal, newVal) {
-            const card = document.getElementById('card' + id);
-            const valEl = document.getElementById(id.toLowerCase());
-            const bar = document.getElementById('bar' + id);
-            card.classList.add('flip'); valEl.classList.add('pulse');
-            let percent = Math.min(100, (newVal / Math.max(newVal, oldVal)) * 100);
-            bar.style.width = percent + '%';
-            setTimeout(() => { card.classList.remove('flip'); valEl.classList.remove('pulse'); }, 600);
-            valEl.textContent = newVal.toLocaleString();
+        function updateCard(id, oldVal, newVal) {
+            const el = document.getElementById(id.toLowerCase());
+            el.classList.add('pulse'); setTimeout(() => el.classList.remove('pulse'), 800);
+            el.textContent = newVal.toLocaleString();
         }
 
-        // Fetch stats from backend
+        // Fetch stats
         async function fetchStats() {
-            if (!currentChannel) return;
+            if (!channel) return;
             try {
-                const res = await fetch(`/api/stats?channel=${encodeURIComponent(currentChannel)}`);
+                const res = await fetch(`/api/stats?channel=${encodeURIComponent(channel)}`);
                 const data = await res.json(); if (data.error) return;
-                animateValue('Title', 0, 0); document.getElementById('title').textContent = data.title || "-";
-                animateValue('Subs', lastStats.subscribers || 0, data.subscribers);
-                animateValue('Views', lastStats.views || 0, data.views);
-                animateValue('Videos', lastStats.videos || 0, data.videos);
+                document.getElementById('title').textContent = data.title;
+                updateCard('Subs', lastStats.subscribers || 0, data.subscribers);
+                updateCard('Views', lastStats.views || 0, data.views);
+                updateCard('Videos', lastStats.videos || 0, data.videos);
 
-                // Charts
                 const now = new Date().toLocaleTimeString();
                 timeLabels.push(now); if (timeLabels.length > 20) { timeLabels.shift(); subData.shift(); viewsData.shift(); videosData.shift(); }
-                subData.push(data.subscribers || 0); viewsData.push(data.views || 0); videosData.push(data.videos || 0);
+                subData.push(data.subscribers); viewsData.push(data.views); videosData.push(data.videos);
                 subChart.update(); viewsChart.update(); videosChart.update();
 
                 lastStats = data;
-            } catch (err) { console.error(err); }
+            } catch (e) { console.error(e); }
         }
 
-        // Search
+        // Search button
         document.getElementById('searchBtn').addEventListener('click', () => {
-            const channel = document.getElementById('channelInput').value.trim();
-            if (!channel) return alert('Enter channel name or URL');
-            currentChannel = channel; fetchStats();
+            const input = document.getElementById('channelInput').value.trim();
+            if (!input) return alert('Enter channel name or URL');
+            channel = input; fetchStats();
             if (timer) clearInterval(timer); timer = setInterval(fetchStats, 15000);
         });
     </script>
