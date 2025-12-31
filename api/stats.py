@@ -1,71 +1,84 @@
-﻿from flask import Flask, request, jsonify
+﻿# api/stats.py
+from flask import Flask, request, jsonify
 import requests
-from flask_cors import CORS
+import os
 from datetime import datetime
-import re
 
 app = Flask(__name__)
-CORS(app)  # Allow requests from any origin
 
-API_KEY = "AIzaSyDNjsDrY3affjQUyEHJJLwtxPfyQDswXTc"  # Your API key
+# ⚠️ Replace with your actual YouTube API key
+YOUTUBE_API_KEY = "AIzaSyDNjsDrY3affjQUyEHJJLwtxPfyQDswXTc"
 
-# Helper: Get channel ID from URL or name
 def get_channel_id(channel_input):
-    channel_input = channel_input.strip()
+    """
+    Determines the channel ID from user input.
+    Supports:
+      - Full channel URL
+      - Channel username
+      - Direct channel ID
+    """
+    if "youtube.com/channel/" in channel_input:
+        return channel_input.split("/channel/")[-1]
+    elif "youtube.com/" in channel_input:
+        # Use search API to get channel ID from username or URL
+        search_url = "https://www.googleapis.com/youtube/v3/search"
+        params = {
+            "part": "snippet",
+            "q": channel_input,
+            "type": "channel",
+            "key": YOUTUBE_API_KEY
+        }
+        r = requests.get(search_url, params=params).json()
+        if "items" in r and len(r["items"]) > 0:
+            return r["items"][0]["snippet"]["channelId"]
+        else:
+            return None
+    else:
+        # Assume direct channel ID
+        return channel_input
 
-    # 1️⃣ If full channel ID URL
-    match = re.search(r"(?:youtube\.com\/channel\/)([a-zA-Z0-9_-]+)", channel_input)
-    if match:
-        return match.group(1)
+def get_channel_stats(channel_id):
+    """
+    Fetches stats for a channel using YouTube Data API v3
+    """
+    url = "https://www.googleapis.com/youtube/v3/channels"
+    params = {
+        "part": "snippet,statistics",
+        "id": channel_id,
+        "key": YOUTUBE_API_KEY
+    }
+    r = requests.get(url, params=params)
+    data = r.json()
+    if "items" not in data or len(data["items"]) == 0:
+        return None
 
-    # 2️⃣ If custom URL (/c/Name or /user/Name)
-    match = re.search(r"(?:youtube\.com\/(?:c|user)\/)([a-zA-Z0-9_-]+)", channel_input)
-    if match:
-        username = match.group(1)
-        # Search via YouTube API to get channel ID
-        res = requests.get(
-            f"https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q={username}&key={API_KEY}"
-        ).json()
-        if "items" in res and res["items"]:
-            return res["items"][0]["snippet"]["channelId"]
+    item = data["items"][0]
+    stats = item["statistics"]
+    snippet = item["snippet"]
 
-    # 3️⃣ Otherwise, treat as plain channel name
-    res = requests.get(
-        f"https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q={channel_input}&key={API_KEY}"
-    ).json()
-    if "items" in res and res["items"]:
-        return res["items"][0]["snippet"]["channelId"]
-
-    return None
+    return {
+        "title": snippet.get("title", "-"),
+        "subscribers": int(stats.get("subscriberCount", 0)),
+        "views": int(stats.get("viewCount", 0)),
+        "videos": int(stats.get("videoCount", 0)),
+        "last_updated": datetime.now().strftime("%H:%M:%S")
+    }
 
 @app.route("/api/stats")
 def stats():
     channel_input = request.args.get("channel")
     if not channel_input:
-        return jsonify({"error": "No channel provided"}), 400
+        return jsonify({"error": "Please provide a channel name or URL"}), 400
 
     channel_id = get_channel_id(channel_input)
     if not channel_id:
-        return jsonify({"error": "Channel not found"}), 404
+        return jsonify({"error": "Could not find channel"}), 404
 
-    # Fetch statistics
-    url = f"https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id={channel_id}&key={API_KEY}"
-    res = requests.get(url).json()
+    stats = get_channel_stats(channel_id)
+    if not stats:
+        return jsonify({"error": "Failed to fetch channel stats"}), 500
 
-    if "items" not in res or not res["items"]:
-        return jsonify({"error": "Stats not found"}), 404
-
-    data = res["items"][0]
-    stats = data["statistics"]
-    snippet = data["snippet"]
-
-    return jsonify({
-        "title": snippet.get("title", "-"),
-        "subscribers": stats.get("subscriberCount", "0"),
-        "views": stats.get("viewCount", "0"),
-        "videos": stats.get("videoCount", "0"),
-        "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    })
+    return jsonify(stats)
 
 if __name__ == "__main__":
     app.run(debug=True)
