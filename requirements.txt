@@ -1,0 +1,3 @@
+fastapi
+google-api-python-client
+uvicorn
